@@ -6,14 +6,17 @@ export function traverseExpr(c : TreeCursor, s : string) : Expr {
   console.log("Print c: " + c);
   switch(c.type.name) {
     case "Number":
+      const value = Number(s.substring(c.from, c.to));
+      if(isNaN(value))
+        throw new Error("ParseError: not a number \"" + s.substring(c.from, c.to) + "\"");
       return {
         tag: "num",
-        value: Number(s.substring(c.from, c.to))
+        value: value
       }
     case "VariableName":
       return {
         tag: "id",
-        name: s.substring(c.from, c.to)
+        name: s.substring(c.from, c.to),
       }
     case "UnaryExpression":
       // UnaryExpression(ArithOp,Number)
@@ -26,12 +29,15 @@ export function traverseExpr(c : TreeCursor, s : string) : Expr {
       c.nextSibling();
       const val = c;
       if(val.type.name !== "Number") {
-        throw new Error("ParseError: unknown number \"" + content + "\"");
+        throw new Error("ParseError: not a number \"" + content + "\"");
       }
       c.parent();
+      const num = Number(s.substring(c.from, c.to));
+      if(isNaN(num))
+        throw new Error("ParseError: not a number \"" + s.substring(c.from, c.to) + "\"");
       return {
         tag: "num",
-        value: Number(s.substring(c.from, c.to)),
+        value: num
       }
     case "BinaryExpression":
       // BinaryExpression(Number,ArithOp,Number)
@@ -56,7 +62,6 @@ export function traverseExpr(c : TreeCursor, s : string) : Expr {
       const arg2 = traverseExpr(c, s);
       c.parent();
 
-      // console.log("Arg1: " + arg1 + " Op: " + op + " Arg2: " + arg2);
       return {
         tag: "binary",
         op: binaryOp,
@@ -72,31 +77,29 @@ export function traverseExpr(c : TreeCursor, s : string) : Expr {
       const args = traverseArgs(c, s);
       console.log("ARGS: " + args);
       c.parent();
-      if(args.length == 1) {
-        if(callName !== "abs" && callName !== "print")
-          throw new Error("ParseError: unknown builtin1 name \"" + callName + "\"");
-        else
+      if(callName == "abs" || callName == "print") {
+        if(args.length == 1)
           return { tag: "builtin1", name: callName, arg: args[0] };
-      } else if(args.length == 2) {
-        if(callName !== "max" && callName !== "min" && callName !== "pow")
-          throw new Error("ParseError: unknown builtin2 name \"" + callName + "\"");
         else
+          throw new Error("ParseError: built1 function \"" + callName + "\" takes exactly 1 argument");
+      } else if(callName == "max" || callName == "min" || callName == "pow") {
+        if(args.length == 2)
           return { tag: "builtin2", name: callName, arg1: args[0], arg2: args[1] };
+        else
+          throw new Error("ParseError: built2 function \"" + callName + "\" takes exactly 2 argument");
       } else {
-        throw new Error("ParseError: function \"" + callName + "\" has too many arguments");
+        throw new Error("ReferenceError: undefined function \"" + callName + "\"");
       }
     default:
-      throw new Error("Could not parse expr at " + c.from + " " + c.to + ": " + s.substring(c.from, c.to));
+      throw new Error("ParseError: Could not parse expr at " + c.from + " " + c.to + ": " + s.substring(c.from, c.to));
   }
 }
 
 export function traverseArgs(c : TreeCursor, s : string) : Array<Expr> {
   var result = new Array<Expr>();
   c.firstChild();
-  console.log("FIRST C: " + c);
 
   while(c.nextSibling()) {
-    console.log("NOW C: " + c);
     result.push(traverseExpr(c, s));
     c.nextSibling();
   }
@@ -126,7 +129,7 @@ export function traverseStmt(c : TreeCursor, s : string) : Stmt {
       c.parent(); // pop going into stmt
       return { tag: "expr", expr: expr }
     default:
-      throw new Error("Could not parse stmt at " + c.node.from + " " + c.node.to + ": " + s.substring(c.from, c.to));
+      throw new Error("ParseError: Could not parse stmt at " + c.node.from + " " + c.node.to + ": " + s.substring(c.from, c.to));
   }
 }
 
@@ -141,7 +144,7 @@ export function traverse(c : TreeCursor, s : string) : Array<Stmt> {
       console.log("traversed " + stmts.length + " statements ", stmts, "stopped at " , c.node);
       return stmts;
     default:
-      throw new Error("Could not parse program at " + c.node.from + " " + c.node.to);
+      throw new Error("ParseError: Could not parse program at " + c.node.from + " " + c.node.to);
   }
 }
 export function parse(source : string) : Array<Stmt> {

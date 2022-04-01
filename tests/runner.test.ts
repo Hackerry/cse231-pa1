@@ -1,5 +1,5 @@
 import { run } from '../runner';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 import 'mocha';
 
 const importObject = {
@@ -62,10 +62,46 @@ describe('run(source, config) function', () => {
 
   // Note: it is often helpful to write tests for a functionality before you
   // implement it. You will make this test pass!
-  it('adds two numbers', async() => {
+  it('adds numbers', async() => {
     const result = await run("2 + 3", config);
     expect(result).to.equal(5);
   });
 
   // TODO: add additional tests here to ensure the compiler runs as expected
+  it('arithmetics: (2+3)*5-1', async() => {
+    const result = await run("2+3*5-1", config);
+    expect(result).to.equal(16);
+  });
+
+  it('built1 functions: abs(print(2-3))', async() => {
+    const result = await run("print(abs(print(2-3)))", config);
+    expect(config.importObject.output).to.equal("-1\n1\n");
+  });
+
+  it('built1 functions: abs(print(2-3))', async() => {
+    const result = await run("pow(2, min(max(-10, 0), 3))", config);
+    expect(result).to.equal(1);
+  });
+
+  it('call undefined function', async() => {
+    try {
+      await run("ma(2, 3)", config)
+    } catch(error) {
+      if(!(error.message as string).includes("ReferenceError"))
+        assert(false, "Error message doesn't contain \"ReferenceError\"");
+      return;
+    }
+    assert(false, "Should throw a \"ReferenceError\"");
+  });
+
+  it('use undefined variable', async() => {
+    try {
+      await run("x=1\ny=2\nmax(x,z)", config)
+    } catch(error) {
+      if(!(error.message as string).includes("ReferenceError"))
+        assert(false, "Error message doesn't contain \"ReferenceError\"");
+      return;
+    }
+    assert(false, "Should throw a \"ReferenceError\"");
+  });
 });
