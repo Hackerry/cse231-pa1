@@ -24,6 +24,20 @@ describe('traverseExpr(c, s) function', () => {
   })
 
   // TODO: add additional tests here to ensure traverseExpr works as expected
+  // it('parses an assignment in the beginning', () => {
+  //   const source = "x=3";
+  //   const cursor = parser.parse(source).cursor();
+
+  //   // go to statement
+  //   cursor.firstChild();
+  //   // go to expression
+  //   cursor.firstChild();
+
+  //   const parsedExpr = traverseExpr(cursor, source);
+
+  //   // Note: we have to use deep equality when comparing objects
+  //   expect(parsedExpr).to.deep.equal({tag: "define", name: "x", value: 3});
+  // })
 });
 
 describe('traverseStmt(c, s) function', () => {
